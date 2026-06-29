@@ -2,102 +2,85 @@
 
 # node-hiprint-transit
 
-`node-hiprint-transit` 是 ArcoPrint 的 Socket.IO 中转服务，用于让公网 Web 系统把打印任务转发到内网或本地运行的 ArcoPrint 客户端。
+`node-hiprint-transit` 是 ArcoPrint 的 Socket.IO 中转服务，用来把 Web 前端的打印任务转发给运行在用户电脑上的 ArcoPrint 客户端。
 
-它只负责连接管理和事件转发，不生成 PDF，不处理打印排版，也不直接访问打印机。真正打印由 ArcoPrint 客户端完成。
+它只做三件事：
 
+- 维护 Web 前端和 ArcoPrint 客户端的连接
+- 转发打印机列表
+- 转发打印任务和打印结果
 
-## 功能
+它不生成 PDF，不处理排版，也不直接访问打印机。真正执行打印的是 ArcoPrint 客户端。
 
-- Web 与 ArcoPrint 客户端通过同一个 Token 加入同一组连接。
-- Web 可以获取在线客户端列表和打印机列表。
-- Web 可以指定某个 ArcoPrint 客户端下发打印任务。
-- 支持 HTTP 或 HTTPS/WSS。
-- 支持 Docker 或 Node.js 运行。
+## 整体流程
 
-## 安装
+```text
+Web 前端
+  -> node-hiprint-transit 中转服务
+  -> ArcoPrint 客户端
+  -> 本机打印机
+```
 
-### Node.js 运行
+Web 前端和 ArcoPrint 客户端必须连接同一个中转服务，并使用同一个 Token。
+
+## 部署中转服务
+
+### 使用 dist 运行
+
+把构建后的 `dist` 目录上传到服务器：
+
+```bash
+cd dist
+node index.js
+```
+
+启动成功后会看到类似输出：
+
+```text
+node-hiprint-transit version: 1.0.0
+
+Serve is running on
+http://服务器IP:17521
+
+Please make sure that the ports have been opened in the security group or firewall.
+token: arcoprint
+```
+
+这里的 `token: arcoprint` 来自 `config.json`，不是固定协议值。你可以改成自己的 Token，但 Web 前端和 ArcoPrint 客户端要保持一致。
+
+### 从源码运行
 
 ```bash
 git clone git@github.com:lwdsw/node-hiprint-transit.git
 cd node-hiprint-transit
 npm install
-node init.js
-node index.js
-```
-
-也可以使用已构建的 `dist` 目录运行：
-
-```bash
-cd dist
-node init.js
 node index.js
 ```
 
 ### Docker 运行
 
-先准备配置文件和日志目录：
-
 ```bash
 mkdir -p /var/hiprint/logs
 cp config.json /var/hiprint/config.json
-```
-
-然后启动：
-
-```bash
 docker-compose up -d
 ```
 
-`docker-compose.yml` 默认挂载：
+如果修改端口，需要同时修改 `/var/hiprint/config.json` 和 `docker-compose.yml` 里的端口映射。
 
-```yaml
-volumes:
-  - /var/hiprint/config.json:/node-hiprint-transit/config.json
-  - /var/hiprint/logs:/node-hiprint-transit/logs
-```
-
-## 端口修改
-如果需要修改端口，例如服务端口改成 `9993`，需要同时修改 `config.json` 和 Docker 端口映射：
-
-```json
-{
-  "port": 9993,
-  "token": "your-transit-token",
-  "useSSL": false,
-  "lang": "en"
-}
-```
-
-```yaml
-ports:
-  - "9993:9993"
-```
-
-如果启用 SSL，可以额外挂载：
-
-```yaml
-  - /var/hiprint/ssl.key:/node-hiprint-transit/src/ssl.key
-  - /var/hiprint/ssl.pem:/node-hiprint-transit/src/ssl.pem
-```
-
-### Windows 运行
-
-Windows 服务器可以使用自解压包部署中转服务。先在开发机生成构建产物：
+### Windows服务器运行
 
 ```bash
 npm run build
 npm run package
 ```
 
-打包完成后会生成：
+生成：
 
 ```text
 out/transit-setup-1.0.0.exe
 ```
 
-把该文件上传到 Windows 服务器后运行解压，修改解压目录里的 `config.json`，再执行 `start.bat` 启动服务。
+上传到 Windows 服务器后运行解压，修改解压目录里的 `config.json`，再执行 `start.bat`。
 
 ## 配置
 
@@ -115,80 +98,70 @@ out/transit-setup-1.0.0.exe
 
 | 字段 | 说明 |
 | --- | --- |
-| `port` | 服务端口，默认 `17521`，建议范围 `1024~65535` |
-| `token` | 连接鉴权 Token，长度至少 6 位，支持 `*` 通配符 |
+| `port` | 服务端口，默认 `17521`，范围 `1024~65535` |
+| `token` | 连接鉴权 Token，长度至少 6 位；Web 前端和 ArcoPrint 客户端必须一致 |
 | `useSSL` | 是否启用 HTTPS/WSS |
 | `lang` | 日志语言，支持 `en`、`zh` |
-| `maxHttpBufferSizeMB` | Socket.IO 单条消息最大体积，默认 `100` MB，建议范围 `1~1024` |
+| `maxHttpBufferSizeMB` | Socket.IO 单条消息最大体积，单位 MB，默认 `100`，范围 `1~1024` |
 
-`token` 不是固定值。Web 端和 ArcoPrint 客户端必须使用同一个 Token，且该 Token 必须能匹配服务端 `config.json` 里的 `token`。如果服务端 token 使用了 `*` 通配符，例如 `store-*`，则 `store-001`、`store-shanghai` 都可以匹配。
+修改配置后需要重启中转服务。
 
-端口可以改成任意未占用端口，例如 `9993`。修改后需要重启服务，并确保服务器安全组或防火墙已放行该 TCP 端口。ArcoPrint 客户端和 Web 端连接地址也要同步改成新的端口：
+如果需要把端口改为 `9993`：
+
+```json
+{
+  "port": 9993,
+  "token": "你的 Token",
+  "useSSL": false,
+  "lang": "en",
+  "maxHttpBufferSizeMB": 100
+}
+```
+
+然后 Web 前端和 ArcoPrint 客户端都连接：
 
 ```text
 http://服务器IP:9993
-https://域名:9993
 ```
 
-初始化向导：
+## ArcoPrint 使用
+
+1. 先启动中转服务。
+2. 打开 ArcoPrint 客户端设置页。
+3. 开启中转服务连接。
+4. 填写中转服务地址，例如 `http://服务器IP:17521`。
+5. 填写 Token，必须和中转服务 `config.json` 里的 `token` 一致。
+6. 保存后观察中转服务日志，看到 `(arcoprint)` 连接和 `update printerList` 即表示客户端已连上并上报打印机。
+
+ArcoPrint 客户端连接中转服务时会携带：
+
+```js
+query: {
+  client: "arcoprint"
+}
+```
+
+这个标识由 ArcoPrint 客户端使用。Web 前端不要传 `query.client = "arcoprint"`，否则中转服务会把它当成打印客户端。
+
+## 前端对接
+
+当前中转服务使用 Socket.IO v4，前端建议使用 v4 客户端：
 
 ```bash
-node init.js
+npm install socket.io-client
 ```
 
-## PDF Blob 大包限制
-
-中转服务需要转发 `pdf_blob` 打印数据。PDF Blob 可能超过 Socket.IO 默认的单条消息大小限制，因此服务端提供了 `maxHttpBufferSizeMB` 配置项，默认 `100MB`。
-
-如果单个 PDF 超过该限制，Socket.IO 会在业务事件进入 `news` 处理前断开连接，服务端日志通常不会出现 `send news to ...`，只会看到 Web 连接断开。遇到这种情况可以先检查浏览器控制台里的发送日志和服务端 `logs` 目录里的断开原因。
-
-`maxHttpBufferSizeMB` 不是越大越好。公网部署时应确保 Token 鉴权开启，并限制可信来源；如果后续 PDF 更大或并发更多，建议改为分片上传/分片转发。
-
-## SSL 证书
-
-启用 SSL 时，服务会读取：
-
-- `src/ssl.key`
-- `src/ssl.pem`
-
-测试环境可以生成自签证书：
-
-```bash
-openssl req -x509 -newkey rsa:2048 \
-  -keyout src/ssl.key \
-  -out src/ssl.pem \
-  -days 3650 \
-  -nodes \
-  -subj "/CN=localhost"
-```
-
-正式环境建议使用可信域名证书，或者用 Nginx/Caddy 做 HTTPS 反向代理，Node 服务保持 HTTP 内网运行。
-
-## 连接方式
-
-### ArcoPrint 客户端连接中转服务
-
-在 ArcoPrint 设置页开启中转服务，填写：
-
-- 中转地址：`http://服务器 IP:17521` 或 `https://域名:17521`
-- Token：与服务端 `config.json` 中匹配的 Token
-
-连接成功后，中转服务会收到客户端信息和打印机列表。
-
-### Web 连接中转服务
+### 连接中转服务
 
 ```js
 import { io } from "socket.io-client";
 
-const socket = io("http://your-server:17521", {
+const socket = io("http://服务器IP:17521", {
   transports: ["websocket", "polling"],
   auth: {
-    token: "your-transit-token",
+    token: "你的 Token",
   },
 });
-
-// your-transit-token 只是示例占位符，需要替换成与你服务端 config.json 匹配的 Token。
-// ArcoPrint 客户端设置页里的中转 Token 也要填写同一个值。
 
 socket.on("connect", () => {
   console.log("transit connected", socket.id);
@@ -199,44 +172,63 @@ socket.on("connect_error", (error) => {
 });
 ```
 
-## 获取客户端和打印机
+前端连接的是中转服务地址，不是用户电脑上的 ArcoPrint 本地地址。
 
-Web 连接后，服务端会自动推送：
-
-- `serverInfo`
-- `clients`
-- `printerList`
-
-也可以主动刷新：
+### 获取打印机列表
 
 ```js
-socket.emit("getClients");
-socket.on("clients", (clients) => {
-  console.log(clients);
-});
-
 socket.emit("refreshPrinterList");
+
 socket.on("printerList", (printers) => {
   console.log(printers);
 });
 ```
 
-`printerList` 中每个打印机会带上 `server.clientId`，打印时需要把它作为 `client` 传回中转服务。
-
-## PDF Blob 打印示例
-
-推荐 Web 端生成 PDF 后，通过 `news` 事件发送 `blob_pdf`。
+返回示例：
 
 ```js
-async function printPdfBlob({ socket, clientId, printer, pdfBlob }) {
+[
+  {
+    name: "Air_Printer",
+    displayName: "Air Printer",
+    label: "Air Printer",
+    value: "Air_Printer",
+    client: "ArcoPrint 客户端 socket id",
+    clientId: "ArcoPrint 客户端 socket id",
+    isDefault: true,
+    status: 3,
+    server: {
+      clientId: "ArcoPrint 客户端 socket id"
+    }
+  }
+]
+```
+
+打印时需要带上这两个值：
+
+```js
+{
+  client: printer.clientId,
+  printer: printer.value
+}
+```
+
+`client` 用来指定把任务发给哪一个在线 ArcoPrint 客户端，`printer` 用来指定该客户端上的打印机。
+
+### PDF Blob 打印
+
+推荐前端生成 PDF 后，通过 `news` 事件发送 `blob_pdf`。
+
+```js
+async function printPdfBlob({ socket, printer, pdfBlob }) {
   const arrayBuffer = await pdfBlob.arrayBuffer();
 
   socket.emit("news", {
-    client: clientId,
+    client: printer.clientId,
+    printer: printer.value,
     type: "blob_pdf",
     pdf_blob: new Uint8Array(arrayBuffer),
     templateId: crypto.randomUUID(),
-    printer: printer || "",
     pageSize: "A4",
     pageNum: 1,
   });
@@ -251,60 +243,79 @@ socket.on("error", (payload) => {
 });
 ```
 
-也可以发送 base64 或 data URI：
+`pdf_blob` 也可以传 base64 或 data URI：
 
 ```js
 socket.emit("news", {
-  client: clientId,
+  client: printer.clientId,
+  printer: printer.value,
   type: "blob_pdf",
   pdf_blob: "data:application/pdf;base64,JVBERi0xLjc...",
   templateId: "order-10001",
-  printer: "",
   pageSize: "A4",
   pageNum: 1,
 });
 ```
 
-## 兼容事件
+## 大 PDF 限制
 
-中转服务会转发以下打印事件：
+PDF Blob 可能超过 Socket.IO 默认的单条消息大小限制。中转服务通过 `maxHttpBufferSizeMB` 控制单条消息最大体积，默认 `100MB`。
 
-| 事件 | 说明 | 建议 |
-| --- | --- | --- |
-| `news` | 常规打印任务。`simple` 分支只推荐 `type: "blob_pdf"` | 推荐 |
-| `printByFragments` | 分片 HTML 打印 | 仅 `sixinone` 兼容 |
-| `render-print` | 客户端渲染后打印 | 仅 `sixinone` 兼容 |
-| `render-pdf` | 客户端渲染并返回 PDF | 仅 `sixinone` 兼容 |
-| `render-jpeg` | 客户端渲染并返回图片 | 仅 `sixinone` 兼容 |
+如果 PDF 超过限制，服务端可能在进入 `news` 事件前断开连接，日志里通常看不到 `send news to ...`。这时可以：
 
-服务端只负责把这些事件转发给指定 `client`，成功和失败由 ArcoPrint 客户端回传：
+- 查看浏览器控制台是否已经执行 `socket.emit("news", payload)`
+- 查看中转服务 `logs` 目录里的断开原因
+- 适当调大 `maxHttpBufferSizeMB`
 
-- `success`
-- `error`
-- `${event}-success`
-- `${event}-error`
+`maxHttpBufferSizeMB` 不建议无限调大。公网部署时应开启 Token 鉴权，并限制可信来源；如果 PDF 很大或并发较高，建议后续改为分片传输。
 
-## IPP 事件
+## 日志排查
 
-中转服务也保留 IPP 相关转发：
+日志写入运行目录下的 `logs`：
 
-- `ippPrint`
-- `ippPrinterConnected`
-- `ippPrinterCallback`
-- `ippRequest`
-- `ippRequestCallback`
+```bash
+tail -f logs/$(date +%F).log
+```
 
-这些事件同样需要指定 `client`。
+正常链路通常会看到：
 
-## 运行日志
+```text
+Client connected: xxx | 你的 Token | (arcoprint)
+xxx update printerList, count: 4, total: 4
+Client connected: yyy | 你的 Token | (web-client)
+yyy request refreshPrinterList
+yyy send printerList, count: 4
+yyy send news to xxx
+xxx client: print success, templateId: order-10001
+```
 
-服务会把日志写入 `./logs` 目录。Docker 部署时建议挂载到宿主机目录，方便排查连接、鉴权和打印转发问题。
+如果没有打印机列表：
+
+- ArcoPrint 客户端可能没有连接中转服务
+- Web 前端和 ArcoPrint 客户端使用的 Token 可能不一致
+- ArcoPrint 客户端所在电脑可能没有可用打印机
+
+如果没有 `send news to ...`：
+
+- 前端可能没有发送 `news`
+- 请求里可能缺少 `client`
+- `client` 可能不是当前在线 ArcoPrint 客户端的 socket id
+- PDF 可能超过 `maxHttpBufferSizeMB`
+
+## HTTPS/WSS
+
+启用 SSL 时，服务会读取：
+
+- `src/ssl.key`
+- `src/ssl.pem`
+
+生产环境建议使用 Nginx/Caddy 做 HTTPS 反向代理，Node 服务保持 HTTP 内网运行。
 
 ## 相关项目
 
 | 项目 | 地址 | 说明 |
 | --- | --- | --- |
-| ArcoPrint 客户端 | https://github.com/lwdsw/hiprint-client | 本地静默打印客户端 |
+| ArcoPrint 客户端 | https://github.com/lwdsw/hiprint-client | 本地打印客户端 |
 | ArcoPrint Transit | https://github.com/lwdsw/node-hiprint-transit | Web 与 ArcoPrint 的中转服务 |
 
 <p align="right"><a href="#readme-top">回到顶部</a></p>
