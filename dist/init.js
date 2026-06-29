@@ -33,8 +33,8 @@ import 'url';
  */
 
 // ES Module need use fileURLToPath to get __dirname
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+const __filename$1 = fileURLToPath(import.meta.url);
+const __dirname$1 = path.dirname(__filename$1);
 
 // Setup readline
 const rl = readline.createInterface({
@@ -45,7 +45,7 @@ const rl = readline.createInterface({
 // Default config
 const CONFIG = {
   port: 17521, // port
-  token: 'vue-plugin-hiprint', // TOKEN
+  token: 'arcoprint', // TOKEN
   useSSL: false, // SSL on/off
   lang: 'en', // language
 };
@@ -53,7 +53,7 @@ const CONFIG = {
 // Setup i18n
 const i18n = new I18n({
   locales: ['en', 'zh'],
-  directory: path.join(__dirname, './src/locales'),
+  directory: path.join(__dirname$1, './src/locales'),
   defaultLocale: 'en',
 });
 
@@ -139,7 +139,7 @@ function setToken() {
           message: i18n.__(
             'Set service TOKEN (Use the wildcard character (*) to match any character):',
           ),
-          default: 'vue-plugin-hiprint',
+          default: 'arcoprint',
           validate: (input) => {
             if (input && input.length >= 6) {
               return true;

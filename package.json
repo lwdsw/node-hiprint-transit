@@ -1,7 +1,7 @@
 {
   "name": "node-hiprint-transit",
-  "version": "0.0.6",
-  "description": "A nodejs server for hiprint transit",
+  "version": "1.0.0",
+  "description": "ArcoPrint Socket.IO transit server",
   "main": "index.js",
   "type": "module",
   "scripts": {
@@ -13,19 +13,19 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Xavier9896/node-hiprint-transit.git"
+    "url": "git+https://github.com/lwdsw/node-hiprint-transit.git"
   },
   "keywords": [
     "hiprint",
     "transit",
     "node"
   ],
-  "author": "xavier",
+  "author": "ArcoStudio<zerone40@163.com>",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/Xavier9896/node-hiprint-transit/issues"
+    "url": "https://github.com/lwdsw/node-hiprint-transit/issues"
   },
-  "homepage": "https://github.com/Xavier9896/node-hiprint-transit#readme",
+  "homepage": "https://github.com/lwdsw/node-hiprint-transit#readme",
   "dependencies": {
     "chalk": "^5.4.1",
     "cli-progress": "^3.12.0",

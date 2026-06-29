@@ -1,8 +1,8 @@
-import require$$1$3 from 'fs';
+import require$$1$2 from 'fs';
 import require$$3 from 'url';
-import require$$1$2 from 'path';
-import require$$0 from 'tty';
-import require$$1$1 from 'util';
+import require$$1$1 from 'path';
+import require$$0$1 from 'tty';
+import require$$0 from 'util';
 import { r as requireSupportsColor, c as commonjsGlobal } from './index_chunk.js';
 
 var i18n$2 = {exports: {}};
@@ -222,7 +222,7 @@ createPrintf$1.createPrintf = createPrintf;
 	exports.printf = (0, createPrintf_1.createPrintf)(); 
 } (printf$1));
 
-var version = "0.15.1";
+var version = "0.15.3";
 var require$$1 = {
 	version: version};
 
@@ -576,7 +576,7 @@ function requireCommon () {
 
 			const split = (typeof namespaces === 'string' ? namespaces : '')
 				.trim()
-				.replace(' ', ',')
+				.replace(/\s+/g, ',')
 				.split(',')
 				.filter(Boolean);
 
@@ -928,7 +928,7 @@ function requireBrowser () {
 		function load() {
 			let r;
 			try {
-				r = exports.storage.getItem('debug');
+				r = exports.storage.getItem('debug') || exports.storage.getItem('DEBUG') ;
 			} catch (error) {
 				// Swallow
 				// XXX (@Qix-) should we be logging these?
@@ -995,8 +995,8 @@ function requireNode () {
 	if (hasRequiredNode) return node.exports;
 	hasRequiredNode = 1;
 	(function (module, exports) {
-		const tty = require$$0;
-		const util = require$$1$1;
+		const tty = require$$0$1;
+		const util = require$$0;
 
 		/**
 		 * This is the Node.js implementation of `debug()`.
@@ -2072,7 +2072,10 @@ var moo = {exports: {}};
 	  function isObject(o) { return o && typeof o === 'object' && !isRegExp(o) && !Array.isArray(o) }
 
 	  function reEscape(s) {
-	    return s.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&')
+	    return s.replace(/[-\/\\^$*+?.()|[\]{}]/g, function(x) {
+	      if (x === '-') return '\\x2d'
+	      return '\\' + x
+	    })
 	  }
 	  function reGroups(s) {
 	    var re = new RegExp('|' + s);
@@ -3081,14 +3084,18 @@ var runtime = {};
  * functions, these are included locally in the output of {@link MessageFormat.compile compile()}.
  */
 Object.defineProperty(runtime, "__esModule", { value: true });
-runtime.reqArgs = runtime.select = runtime.plural = runtime.strictNumber = runtime.number = runtime._nf = void 0;
+runtime._nf = _nf$1;
+runtime.number = number$1;
+runtime.strictNumber = strictNumber;
+runtime.plural = plural;
+runtime.select = select;
+runtime.reqArgs = reqArgs;
 /** @private */
 function _nf$1(lc) {
     // eslint-disable-next-line @typescript-eslint/ban-ts-comment
     // @ts-ignore
     return _nf$1[lc] || (_nf$1[lc] = new Intl.NumberFormat(lc));
 }
-runtime._nf = _nf$1;
 /**
  * Utility function for `#` in plural rules
  *
@@ -3100,7 +3107,6 @@ runtime._nf = _nf$1;
 function number$1(lc, value, offset) {
     return _nf$1(lc).format(value - offset);
 }
-runtime.number = number$1;
 /**
  * Strict utility function for `#` in plural rules
  *
@@ -3118,7 +3124,6 @@ function strictNumber(lc, value, offset, name) {
         throw new Error('`' + name + '` or its offset is not a number');
     return _nf$1(lc).format(n);
 }
-runtime.strictNumber = strictNumber;
 /**
  * Utility function for `{N, plural|selectordinal, ...}`
  *
@@ -3137,7 +3142,6 @@ function plural(value, offset, lcfunc, data, isOrdinal) {
     var key = lcfunc(value, isOrdinal);
     return key in data ? data[key] : data.other;
 }
-runtime.plural = plural;
 /**
  * Utility function for `{N, select, ...}`
  *
@@ -3148,7 +3152,6 @@ runtime.plural = plural;
 function select(value, data) {
     return {}.hasOwnProperty.call(data, value) ? data[value] : data.other;
 }
-runtime.select = select;
 /**
  * Checks that all required arguments are set to defined values
  *
@@ -3158,18 +3161,19 @@ runtime.select = select;
  * @param data The data object being checked
  */
 function reqArgs(keys, data) {
-    for (var i = 0; i < keys.length; ++i)
-        if (!data || data[keys[i]] === undefined)
+    for (var i = 0; i < keys.length; ++i) {
+        if (!data || data[keys[i]] === undefined) {
             throw new Error("Message requires argument '".concat(keys[i], "'"));
+        }
+    }
 }
-runtime.reqArgs = reqArgs;
 
 var formatters = {};
 
 var date$1 = {};
 
 Object.defineProperty(date$1, "__esModule", { value: true });
-date$1.date = void 0;
+date$1.date = date;
 /**
  * Represent a date as a short/default/long/full string
  *
@@ -3212,12 +3216,11 @@ function date(value, lc, size) {
     }
     return new Date(value).toLocaleDateString(lc, o);
 }
-date$1.date = date;
 
 var duration$1 = {};
 
 Object.defineProperty(duration$1, "__esModule", { value: true });
-duration$1.duration = void 0;
+duration$1.duration = duration;
 /**
  * Represent a duration in seconds as a string
  *
@@ -3267,9 +3270,8 @@ function duration(value) {
     return (sign +
         first +
         ':' +
-        parts.map(function (n) { return (n < 10 ? '0' + String(n) : String(n)); }).join(':'));
+        parts.map(function (n) { return (Number(n) < 10 ? '0' + String(n) : String(n)); }).join(':'));
 }
-duration$1.duration = duration;
 
 var number = {};
 
@@ -3299,7 +3301,8 @@ var number = {};
  * ```
  */
 Object.defineProperty(number, "__esModule", { value: true });
-number.numberPercent = number.numberInteger = number.numberCurrency = number.numberFmt = void 0;
+number.numberPercent = number.numberInteger = number.numberCurrency = void 0;
+number.numberFmt = numberFmt;
 var _nf = {};
 function nf(lc, opt) {
     var key = String(lc) + JSON.stringify(opt);
@@ -3321,7 +3324,6 @@ function numberFmt(value, lc, arg, defaultCurrency) {
     };
     return nf(lc, opt[type] || {}).format(value);
 }
-number.numberFmt = numberFmt;
 var numberCurrency = function (value, lc, arg) {
     return nf(lc, {
         style: 'currency',
@@ -3343,7 +3345,7 @@ number.numberPercent = numberPercent;
 var time$1 = {};
 
 Object.defineProperty(time$1, "__esModule", { value: true });
-time$1.time = void 0;
+time$1.time = time;
 /**
  * Represent a time as a short/default/long string
  *
@@ -3371,7 +3373,6 @@ function time(value, lc, size) {
         minute: 'numeric',
         hour: 'numeric'
     };
-    /* eslint-disable no-fallthrough */
     switch (size) {
         case 'full':
         case 'long':
@@ -3382,7 +3383,6 @@ function time(value, lc, size) {
     }
     return new Date(value).toLocaleTimeString(lc, o);
 }
-time$1.time = time;
 
 (function (exports) {
 	Object.defineProperty(exports, "__esModule", { value: true });
@@ -3492,7 +3492,7 @@ var Runtime = runtime;
 var Formatters = formatters;
 var safeIdentifier$1 = safeIdentifier$2;
 
-function _interopNamespaceDefault$1(e) {
+function _interopNamespaceDefault$2(e) {
     var n = Object.create(null);
     if (e) {
         Object.keys(e).forEach(function (k) {
@@ -3509,8 +3509,8 @@ function _interopNamespaceDefault$1(e) {
     return Object.freeze(n);
 }
 
-var Runtime__namespace = /*#__PURE__*/_interopNamespaceDefault$1(Runtime);
-var Formatters__namespace = /*#__PURE__*/_interopNamespaceDefault$1(Formatters);
+var Runtime__namespace = /*#__PURE__*/_interopNamespaceDefault$2(Runtime);
+var Formatters__namespace = /*#__PURE__*/_interopNamespaceDefault$2(Formatters);
 
 /**
  * Parent class for errors.
@@ -5678,7 +5678,13 @@ var cardinals = {exports: {}};
 	  return n == 1 && v0 ? 'one' : 'other';
 	};
 	const e = (n) => 'other';
-	const f = (n) => n == 1 ? 'one'
+	const f = (n) => {
+	  const s = String(n).split('.'), i = s[0], v0 = !s[1], i1000000 = i.slice(-6);
+	  return n == 1 && v0 ? 'one'
+	    : i != 0 && i1000000 == 0 && v0 ? 'many'
+	    : 'other';
+	};
+	const g = (n) => n == 1 ? 'one'
 	    : n == 2 ? 'two'
 	    : 'other';
 
@@ -5768,12 +5774,7 @@ var cardinals = {exports: {}};
 	    : 'other';
 	},
 
-	ca: (n) => {
-	  const s = String(n).split('.'), i = s[0], v0 = !s[1], i1000000 = i.slice(-6);
-	  return n == 1 && v0 ? 'one'
-	    : i != 0 && i1000000 == 0 && v0 ? 'many'
-	    : 'other';
-	},
+	ca: f,
 
 	ce: a,
 
@@ -5795,6 +5796,12 @@ var cardinals = {exports: {}};
 	    : !v0 ? 'many'
 	    : 'other';
 	},
+
+	csw: b,
+
+	cv: (n) => n == 0 ? 'zero'
+	    : n == 1 ? 'one'
+	    : 'other',
 
 	cy: (n) => n == 0 ? 'zero'
 	    : n == 1 ? 'one'
@@ -5939,6 +5946,8 @@ var cardinals = {exports: {}};
 
 	id: e,
 
+	ie: d,
+
 	ig: e,
 
 	ii: e,
@@ -5950,14 +5959,9 @@ var cardinals = {exports: {}};
 	  return t0 && i10 == 1 && i100 != 11 || t % 10 == 1 && t % 100 != 11 ? 'one' : 'other';
 	},
 
-	it: (n) => {
-	  const s = String(n).split('.'), i = s[0], v0 = !s[1], i1000000 = i.slice(-6);
-	  return n == 1 && v0 ? 'one'
-	    : i != 0 && i1000000 == 0 && v0 ? 'many'
-	    : 'other';
-	},
+	it: f,
 
-	iu: f,
+	iu: g,
 
 	ja: e,
 
@@ -5995,6 +5999,10 @@ var cardinals = {exports: {}};
 
 	ko: e,
 
+	kok: c,
+
+	kok_Latn: c,
+
 	ks: a,
 
 	ksb: a,
@@ -6031,6 +6039,8 @@ var cardinals = {exports: {}};
 	lij: d,
 
 	lkt: e,
+
+	lld: f,
 
 	ln: b,
 
@@ -6090,7 +6100,7 @@ var cardinals = {exports: {}};
 
 	nah: a,
 
-	naq: f,
+	naq: g,
 
 	nb: a,
 
@@ -6154,12 +6164,7 @@ var cardinals = {exports: {}};
 	    : 'other';
 	},
 
-	pt_PT: (n) => {
-	  const s = String(n).split('.'), i = s[0], v0 = !s[1], i1000000 = i.slice(-6);
-	  return n == 1 && v0 ? 'one'
-	    : i != 0 && i1000000 == 0 && v0 ? 'many'
-	    : 'other';
-	},
+	pt_PT: f,
 
 	rm: a,
 
@@ -6186,23 +6191,32 @@ var cardinals = {exports: {}};
 
 	saq: a,
 
-	sat: f,
+	sat: g,
 
 	sc: d,
 
-	scn: d,
+	scn: f,
 
 	sd: a,
 
 	sdh: a,
 
-	se: f,
+	se: g,
 
 	seh: a,
 
 	ses: e,
 
 	sg: e,
+
+	sgs: (n) => {
+	  const s = String(n).split('.'), f = s[1] || '', t0 = Number(s[0]) == n, n10 = t0 && s[0].slice(-1), n100 = t0 && s[0].slice(-2);
+	  return n10 == 1 && n100 != 11 ? 'one'
+	    : n == 2 ? 'two'
+	    : n != 2 && (n10 >= 2 && n10 <= 9) && (n100 < 11 || n100 > 19) ? 'few'
+	    : f != 0 ? 'many'
+	    : 'other';
+	},
 
 	sh: (n) => {
 	  const s = String(n).split('.'), i = s[0], f = s[1] || '', v0 = !s[1], i10 = i.slice(-1), i100 = i.slice(-2), f10 = f.slice(-1), f100 = f.slice(-2);
@@ -6239,15 +6253,15 @@ var cardinals = {exports: {}};
 	    : 'other';
 	},
 
-	sma: f,
+	sma: g,
 
-	smi: f,
+	smi: g,
 
-	smj: f,
+	smj: g,
 
-	smn: f,
+	smn: g,
 
-	sms: f,
+	sms: g,
 
 	sn: a,
 
@@ -6328,12 +6342,7 @@ var cardinals = {exports: {}};
 
 	ve: a,
 
-	vec: (n) => {
-	  const s = String(n).split('.'), i = s[0], v0 = !s[1], i1000000 = i.slice(-6);
-	  return n == 1 && v0 ? 'one'
-	    : i != 0 && i1000000 == 0 && v0 ? 'many'
-	    : 'other';
-	},
+	vec: f,
 
 	vi: e,
 
@@ -6408,6 +6417,8 @@ var pluralCategories = {exports: {}};
 	chr: a,
 	ckb: a,
 	cs: {cardinal:[o,f,m,x],ordinal:[x]},
+	csw: a,
+	cv: {cardinal:[z,o,x],ordinal:[x]},
 	cy: {cardinal:[z,o,t,f,m,x],ordinal:[z,o,t,f,m,x]},
 	da: a,
 	de: a,
@@ -6448,6 +6459,7 @@ var pluralCategories = {exports: {}};
 	hy: b,
 	ia: a,
 	id: c,
+	ie: a,
 	ig: c,
 	ii: c,
 	io: a,
@@ -6472,6 +6484,8 @@ var pluralCategories = {exports: {}};
 	km: c,
 	kn: a,
 	ko: c,
+	kok: {cardinal:[o,x],ordinal:[o,t,f,x]},
+	kok_Latn: {cardinal:[o,x],ordinal:[o,t,f,x]},
 	ks: a,
 	ksb: a,
 	ksh: {cardinal:[z,o,x],ordinal:[x]},
@@ -6483,6 +6497,7 @@ var pluralCategories = {exports: {}};
 	lg: a,
 	lij: {cardinal:[o,x],ordinal:[m,x]},
 	lkt: c,
+	lld: {cardinal:[o,m,x],ordinal:[m,x]},
 	ln: a,
 	lo: {cardinal:[x],ordinal:[o,x]},
 	lt: {cardinal:[o,f,m,x],ordinal:[x]},
@@ -6533,13 +6548,14 @@ var pluralCategories = {exports: {}};
 	saq: a,
 	sat: d,
 	sc: {cardinal:[o,x],ordinal:[m,x]},
-	scn: {cardinal:[o,x],ordinal:[m,x]},
+	scn: {cardinal:[o,m,x],ordinal:[m,x]},
 	sd: a,
 	sdh: a,
 	se: d,
 	seh: a,
 	ses: c,
 	sg: c,
+	sgs: {cardinal:[o,t,f,m,x],ordinal:[x]},
 	sh: {cardinal:[o,f,x],ordinal:[x]},
 	shi: {cardinal:[o,f,x],ordinal:[x]},
 	si: a,
@@ -6781,6 +6797,15 @@ var plurals = {exports: {}};
 	    : 'other';
 	},
 
+	csw: b,
+
+	cv: (n, ord) => {
+	  if (ord) return 'other';
+	  return n == 0 ? 'zero'
+	    : n == 1 ? 'one'
+	    : 'other';
+	},
+
 	cy: (n, ord) => {
 	  if (ord) return (n == 0 || n == 7 || n == 8 || n == 9) ? 'zero'
 	    : n == 1 ? 'one'
@@ -6976,6 +7001,8 @@ var plurals = {exports: {}};
 
 	id: e,
 
+	ie: d,
+
 	ig: e,
 
 	ii: e,
@@ -7047,6 +7074,22 @@ var plurals = {exports: {}};
 
 	ko: e,
 
+	kok: (n, ord) => {
+	  if (ord) return n == 1 ? 'one'
+	    : (n == 2 || n == 3) ? 'two'
+	    : n == 4 ? 'few'
+	    : 'other';
+	  return n >= 0 && n <= 1 ? 'one' : 'other';
+	},
+
+	kok_Latn: (n, ord) => {
+	  if (ord) return n == 1 ? 'one'
+	    : (n == 2 || n == 3) ? 'two'
+	    : n == 4 ? 'few'
+	    : 'other';
+	  return n >= 0 && n <= 1 ? 'one' : 'other';
+	},
+
 	ks: a,
 
 	ksb: a,
@@ -7094,6 +7137,14 @@ var plurals = {exports: {}};
 	},
 
 	lkt: e,
+
+	lld: (n, ord) => {
+	  const s = String(n).split('.'), i = s[0], v0 = !s[1], i1000000 = i.slice(-6);
+	  if (ord) return (n == 11 || n == 8 || n == 80 || n == 800) ? 'many' : 'other';
+	  return n == 1 && v0 ? 'one'
+	    : i != 0 && i1000000 == 0 && v0 ? 'many'
+	    : 'other';
+	},
 
 	ln: b,
 
@@ -7296,9 +7347,11 @@ var plurals = {exports: {}};
 	},
 
 	scn: (n, ord) => {
-	  const s = String(n).split('.'), v0 = !s[1];
-	  if (ord) return (n == 11 || n == 8 || n == 80 || n == 800) ? 'many' : 'other';
-	  return n == 1 && v0 ? 'one' : 'other';
+	  const s = String(n).split('.'), i = s[0], v0 = !s[1], t0 = Number(s[0]) == n, i1000000 = i.slice(-6);
+	  if (ord) return (n == 11 || n == 8 || (t0 && n >= 80 && n <= 89) || (t0 && n >= 800 && n <= 899)) ? 'many' : 'other';
+	  return n == 1 && v0 ? 'one'
+	    : i != 0 && i1000000 == 0 && v0 ? 'many'
+	    : 'other';
 	},
 
 	sd: a,
@@ -7312,6 +7365,16 @@ var plurals = {exports: {}};
 	ses: e,
 
 	sg: e,
+
+	sgs: (n, ord) => {
+	  const s = String(n).split('.'), f = s[1] || '', t0 = Number(s[0]) == n, n10 = t0 && s[0].slice(-1), n100 = t0 && s[0].slice(-2);
+	  if (ord) return 'other';
+	  return n10 == 1 && n100 != 11 ? 'one'
+	    : n == 2 ? 'two'
+	    : n != 2 && (n10 >= 2 && n10 <= 9) && (n100 < 11 || n100 > 19) ? 'few'
+	    : f != 0 ? 'many'
+	    : 'other';
+	},
 
 	sh: (n, ord) => {
 	  const s = String(n).split('.'), i = s[0], f = s[1] || '', v0 = !s[1], i10 = i.slice(-1), i100 = i.slice(-2), f10 = f.slice(-1), f100 = f.slice(-2);
@@ -7507,7 +7570,7 @@ var PluralCategories = pluralCategoriesExports;
 var Plurals = pluralsExports;
 var safeIdentifier = safeIdentifier$2;
 
-function _interopNamespaceDefault(e) {
+function _interopNamespaceDefault$1(e) {
     var n = Object.create(null);
     if (e) {
         Object.keys(e).forEach(function (k) {
@@ -7524,9 +7587,9 @@ function _interopNamespaceDefault(e) {
     return Object.freeze(n);
 }
 
-var Cardinals__namespace = /*#__PURE__*/_interopNamespaceDefault(Cardinals);
-var PluralCategories__namespace = /*#__PURE__*/_interopNamespaceDefault(PluralCategories);
-var Plurals__namespace = /*#__PURE__*/_interopNamespaceDefault(Plurals);
+var Cardinals__namespace = /*#__PURE__*/_interopNamespaceDefault$1(Cardinals);
+var PluralCategories__namespace = /*#__PURE__*/_interopNamespaceDefault$1(PluralCategories);
+var Plurals__namespace = /*#__PURE__*/_interopNamespaceDefault$1(Plurals);
 
 function normalize(locale) {
     if (typeof locale !== 'string' || locale.length < 2) {
@@ -7712,9 +7775,9 @@ lib.default = entry;
 // dependencies
 const printf = printf$1.printf;
 const pkgVersion = require$$1.version;
-const fs = require$$1$3;
+const fs = require$$1$2;
 const url = require$$3;
-const path = require$$1$2;
+const path = require$$1$1;
 const debug = srcExports('i18n:debug');
 const warn = srcExports('i18n:warn');
 const error = srcExports('i18n:error');
@@ -9116,4 +9179,4 @@ i18n$2.exports = i18n();
  */
 var I18n = i18n$2.exports.I18n = i18n;
 
-export { I18n as I, requireMs as r };
+export { I18n as I, srcExports as s };

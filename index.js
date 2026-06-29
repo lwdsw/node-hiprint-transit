@@ -9,6 +9,7 @@ import http from 'node:http';
 import https from 'node:https';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
+import { createRequire } from 'node:module';
 import { totalmem, freemem } from 'node:os';
 import chalk from 'chalk';
 import { I18n } from 'i18n';
@@ -17,11 +18,12 @@ import forge from 'node-forge';
 import { toUnicode } from 'punycode';
 import log from './src/log.js';
 import { readConfig, getIPAddress } from './src/config.js';
-import packageJson from './package.json' assert { type: 'json' };
 
 // ES Module need use fileURLToPath to get __dirname
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+const require = createRequire(import.meta.url);
+const packageJson = require('./package.json');
 
 const printEvents = [
   'news',
@@ -121,7 +123,7 @@ readConfig().then((CONFIG) => {
 
     const allClients =
       Array.from(io.sockets.sockets.values()).filter(
-        ({ handshake }) => handshake.query?.client === 'electron-hiprint',
+        ({ handshake }) => handshake.query?.client === 'arcoprint',
       )?.length || 0;
 
     const allWebClients =
@@ -131,9 +133,9 @@ readConfig().then((CONFIG) => {
     const serverInfo = {
       // Server version
       version: packageJson.version,
-      // Number of Electron-hiprint clients for the current socket's token
+      // Number of ArcoPrint clients for the current socket's token
       currentClients,
-      // Number of all Electron-hiprint clients
+      // Number of all ArcoPrint clients
       allClients,
       // Number of web clients for the current socket's token
       webClients,
@@ -147,15 +149,15 @@ readConfig().then((CONFIG) => {
     socket.emit('serverInfo', serverInfo);
 
     if (socket.handshake.query.test !== 'true') {
-      if (socket.handshake.query.client === 'electron-hiprint') {
+      if (socket.handshake.query.client === 'arcoprint') {
         log(
           i18n.__(
             'Client connected: %s',
-            `${socket.id} | ${sToken} | (electron-hiprint)`,
+            `${socket.id} | ${sToken} | (arcoprint)`,
           ),
         );
-        // Join electron-hiprint room
-        socket.join(`${sToken}_electron-hiprint`);
+        // Join arcoprint room
+        socket.join(`${sToken}_arcoprint`);
       } else {
         log(
           i18n.__(
@@ -222,7 +224,7 @@ readConfig().then((CONFIG) => {
 
     // Get all clients printer list
     socket.on('refreshPrinterList', () => {
-      io.to(`${sToken}_electron-hiprint`).emit('refreshPrinterList');
+      io.to(`${sToken}_arcoprint`).emit('refreshPrinterList');
 
       // Just wait 2 seconds for the client to update the printer list
       // Of course, this is not a good way to do it. But it’s not like it can’t be used 🤪
@@ -253,7 +255,7 @@ readConfig().then((CONFIG) => {
       );
     });
 
-    // Make a ipp print to electron-hiprint client
+    // Make a ipp print to arcoprint client
     socket.on('ippPrint', (options) => {
       if (options.client) {
         if (!CLIENT.get(sToken)[options.client]) {
@@ -287,7 +289,7 @@ readConfig().then((CONFIG) => {
       }
     });
 
-    // Make a ipp request to electron-hiprint client
+    // Make a ipp request to arcoprint client
     socket.on('ippRequest', (options) => {
       if (options.client) {
         if (!CLIENT.get(sToken)[options.client]) {
@@ -402,8 +404,8 @@ readConfig().then((CONFIG) => {
     socket.on('disconnect', () => {
       if (socket.handshake.query.test !== 'true') {
         log(i18n.__('Client disconnected: %s', socket.id));
-        // Remove electron-hiprint client from CLIENT
-        if (socket.handshake.query.client === 'electron-hiprint') {
+        // Remove arcoprint client from CLIENT
+        if (socket.handshake.query.client === 'arcoprint') {
           delete CLIENT.get(sToken)[socket.id];
           // Send client list to web client
           io.to(`${sToken}_web-client`).emit('clients', CLIENT.get(sToken));
@@ -417,7 +419,7 @@ readConfig().then((CONFIG) => {
     () => {
       log(i18n.__('Retrieve the client print list'));
       CLIENT.forEach((_, key) => {
-        io.to(`${key}_electron-hiprint`).emit('refreshPrinterList');
+        io.to(`${key}_arcoprint`).emit('refreshPrinterList');
       });
     },
     1000 * 60 * 10,

@@ -1,6 +1,6 @@
 {
   "port": 17521,
-  "token": "hiprint",
+  "token": "arcoprint",
   "useSSL": false,
   "lang": "en"
 }

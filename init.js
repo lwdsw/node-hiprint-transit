@@ -24,7 +24,7 @@ const rl = readline.createInterface({
 // Default config
 const CONFIG = {
   port: 17521, // port
-  token: 'vue-plugin-hiprint', // TOKEN
+  token: 'arcoprint', // TOKEN
   useSSL: false, // SSL on/off
   lang: 'en', // language
 };
@@ -118,7 +118,7 @@ function setToken() {
           message: i18n.__(
             'Set service TOKEN (Use the wildcard character (*) to match any character):',
           ),
-          default: 'vue-plugin-hiprint',
+          default: 'arcoprint',
           validate: (input) => {
             if (input && input.length >= 6) {
               return true;

@@ -18,7 +18,7 @@ const configPath = path.join(__dirname, '../', 'config.json');
 // Default config
 const CONFIG = {
   port: '17521',
-  token: 'vue-plugin-hiprint',
+  token: 'arcoprint',
   useSSL: false,
   lang: 'en',
 };
@@ -42,7 +42,7 @@ export function readConfig() {
           CONFIG.port = _CONFIG.port;
           // Check token need more than 6 characters, and can't be empty
           if (_CONFIG.token && _CONFIG.token.length < 6) {
-            _CONFIG.token = 'vue-plugin-hiprint';
+            _CONFIG.token = 'arcoprint';
           }
           CONFIG.token = _CONFIG.token;
           CONFIG.useSSL = _CONFIG.useSSL || false;
@@ -70,7 +70,7 @@ export function writeConfig(_CONFIG) {
   if (_CONFIG.port < 10000 || _CONFIG.port > 65535) _CONFIG.port = '17521';
   // Check token need more than 6 characters, and can't be empty
   if ((_CONFIG.token || '').length < 6) {
-    _CONFIG.token = 'vue-plugin-hiprint';
+    _CONFIG.token = 'arcoprint';
   }
   _CONFIG.useSSL = Boolean(_CONFIG.useSSL) || false;
   // Check lang need in ["zh", "en"]

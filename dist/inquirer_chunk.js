@@ -4,14 +4,14 @@ import require$$0$3 from 'assert';
 import require$$0$2 from 'events';
 import assert$1 from 'node:assert';
 import require$$0$4 from 'tty';
-import require$$0$7 from 'readline';
+import require$$0$8 from 'readline';
 import require$$0$5 from 'stream';
 import require$$0$6 from 'buffer';
-import require$$1$1 from 'util';
-import require$$1$2 from 'fs';
-import require$$1$5 from 'child_process';
-import require$$1$3 from 'string_decoder';
-import require$$1$4 from 'path';
+import require$$0$7 from 'util';
+import require$$1$1 from 'fs';
+import require$$1$4 from 'child_process';
+import require$$1$2 from 'string_decoder';
+import require$$1$3 from 'path';
 import require$$2$1 from 'crypto';
 import readline$1 from 'node:readline';
 
@@ -11866,7 +11866,7 @@ var _setCacheAdd = setCacheAdd$1;
  * @name has
  * @memberOf SetCache
  * @param {*} value The value to search for.
- * @returns {number} Returns `true` if `value` is found, else `false`.
+ * @returns {boolean} Returns `true` if `value` is found, else `false`.
  */
 
 function setCacheHas$1(value) {
@@ -18143,7 +18143,7 @@ function requireBuffer_list () {
 	function _toPrimitive(input, hint) { if (typeof input !== "object" || input === null) return input; var prim = input[Symbol.toPrimitive]; if (prim !== undefined) { var res = prim.call(input, hint); if (typeof res !== "object") return res; throw new TypeError("@@toPrimitive must return a primitive value."); } return (String )(input); }
 	var _require = require$$0$6,
 	  Buffer = _require.Buffer;
-	var _require2 = require$$1$1,
+	var _require2 = require$$0$7,
 	  inspect = _require2.inspect;
 	var custom = inspect && inspect.custom || 'inspect';
 	function copyBuffer(src, target, offset) {
@@ -18637,7 +18637,7 @@ function requireNode () {
 	 * For Node.js, simply re-export the core `util.deprecate` function.
 	 */
 
-	node = require$$1$1.deprecate;
+	node = require$$0$7.deprecate;
 	return node;
 }
 
@@ -20101,7 +20101,7 @@ function require_stream_readable () {
 	}
 
 	/*<replacement>*/
-	var debugUtil = require$$1$1;
+	var debugUtil = require$$0$7;
 	var debug;
 	if (debugUtil && debugUtil.debuglog) {
 	  debug = debugUtil.debuglog('stream');
@@ -21826,7 +21826,7 @@ bl.exports.BufferList = BufferList;
 
 var blExports = bl.exports;
 
-const readline = require$$0$7;
+const readline = require$$0$8;
 const chalk = source$1;
 const cliCursor = cliCursor$2;
 const cliSpinners = cliSpinners$1;
@@ -24180,7 +24180,7 @@ var utf8$1 = function() {
 var unicode$1 = {exports: {}};
 
 (function (module) {
-	var util = require$$1$1,
+	var util = require$$0$7,
 	  Match = match;
 
 	/**
@@ -24297,7 +24297,7 @@ var unicodeExports = unicode$1.exports;
 var mbcs$1 = {exports: {}};
 
 (function (module) {
-	var util = require$$1$1,
+	var util = require$$0$7,
 	  Match = match;
 
 	/**
@@ -24798,7 +24798,7 @@ var mbcsExports = mbcs$1.exports;
 var sbcs$1 = {exports: {}};
 
 (function (module) {
-	var util = require$$1$1,
+	var util = require$$0$7,
 	  Match = match;
 
 	/**
@@ -25708,7 +25708,7 @@ var sbcsExports = sbcs$1.exports;
 var iso2022$1 = {exports: {}};
 
 (function (module) {
-	var util = require$$1$1,
+	var util = require$$0$7,
 	  Match = match;
 
 
@@ -25853,7 +25853,7 @@ var iso2022$1 = {exports: {}};
 
 var iso2022Exports = iso2022$1.exports;
 
-var fs$1 = require$$1$2;
+var fs$1 = require$$1$1;
 
 var utf8  = utf8$1,
   unicode = unicodeExports,
@@ -26189,7 +26189,7 @@ function requireInternal () {
 	//------------------------------------------------------------------------------
 
 	// We use node.js internal decoder. Its signature is the same as ours.
-	var StringDecoder = require$$1$3.StringDecoder;
+	var StringDecoder = require$$1$2.StringDecoder;
 
 	if (!StringDecoder.prototype.end) // Node v0.8 doesn't have this method.
 	    StringDecoder.prototype.end = function() {};
@@ -37127,8 +37127,8 @@ var osTmpdir = function () {
 /*
  * Module dependencies.
  */
-const fs = require$$1$2;
-const path = require$$1$4;
+const fs = require$$1$1;
+const path = require$$1$3;
 const crypto = require$$2$1;
 const osTmpDir = osTmpdir;
 const _c = process.binding('constants');
@@ -37900,8 +37900,8 @@ RemoveFileError$1.RemoveFileError = RemoveFileError;
  */
 Object.defineProperty(main, "__esModule", { value: true });
 var chardet_1 = chardet;
-var child_process_1 = require$$1$5;
-var fs_1 = require$$1$2;
+var child_process_1 = require$$1$4;
+var fs_1 = require$$1$1;
 var iconv_lite_1 = libExports;
 var tmp_1 = tmp;
 var CreateFileError_1 = CreateFileError$1;
@@ -38930,7 +38930,7 @@ var getIntrinsic = function GetIntrinsic(name, allowMissing) {
 				if (!allowMissing) {
 					throw new $TypeError$2('base intrinsic for ' + name + ' exists, but the property is not available.');
 				}
-				return void 0;
+				return void undefined$1;
 			}
 			if ($gOPD && (i + 1) >= parts.length) {
 				var desc = $gOPD(value, part);
@@ -39098,10 +39098,10 @@ var applyBind = function applyBind() {
 
 	module.exports = function callBind(originalFunction) {
 		var func = callBindBasic(arguments);
-		var adjustedLength = originalFunction.length - (arguments.length - 1);
+		var adjustedLength = 1 + originalFunction.length - (arguments.length - 1);
 		return setFunctionLength$1(
 			func,
-			1 + (adjustedLength > 0 ? adjustedLength : 0),
+			adjustedLength > 0 ? adjustedLength : 0,
 			true
 		);
 	};
