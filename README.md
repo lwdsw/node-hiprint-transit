@@ -108,16 +108,18 @@ out/transit-setup-1.0.0.exe
   "port": 17521,
   "token": "arcoprint",
   "useSSL": false,
-  "lang": "en"
+  "lang": "en",
+  "maxHttpBufferSizeMB": 100
 }
 ```
 
 | 字段 | 说明 |
 | --- | --- |
-| `port` | 服务端口，默认 `17521` |
+| `port` | 服务端口，默认 `17521`，建议范围 `1024~65535` |
 | `token` | 连接鉴权 Token，长度至少 6 位，支持 `*` 通配符 |
 | `useSSL` | 是否启用 HTTPS/WSS |
 | `lang` | 日志语言，支持 `en`、`zh` |
+| `maxHttpBufferSizeMB` | Socket.IO 单条消息最大体积，默认 `100` MB，建议范围 `1~1024` |
 
 `token` 不是固定值。Web 端和 ArcoPrint 客户端必须使用同一个 Token，且该 Token 必须能匹配服务端 `config.json` 里的 `token`。如果服务端 token 使用了 `*` 通配符，例如 `store-*`，则 `store-001`、`store-shanghai` 都可以匹配。
 
@@ -133,6 +135,14 @@ https://域名:9993
 ```bash
 node init.js
 ```
+
+## PDF Blob 大包限制
+
+中转服务需要转发 `pdf_blob` 打印数据。PDF Blob 可能超过 Socket.IO 默认的单条消息大小限制，因此服务端提供了 `maxHttpBufferSizeMB` 配置项，默认 `100MB`。
+
+如果单个 PDF 超过该限制，Socket.IO 会在业务事件进入 `news` 处理前断开连接，服务端日志通常不会出现 `send news to ...`，只会看到 Web 连接断开。遇到这种情况可以先检查浏览器控制台里的发送日志和服务端 `logs` 目录里的断开原因。
+
+`maxHttpBufferSizeMB` 不是越大越好。公网部署时应确保 Token 鉴权开启，并限制可信来源；如果后续 PDF 更大或并发更多，建议改为分片上传/分片转发。
 
 ## SSL 证书
 

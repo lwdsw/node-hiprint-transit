@@ -27,6 +27,7 @@ const CONFIG = {
   token: 'arcoprint', // TOKEN
   useSSL: false, // SSL on/off
   lang: 'en', // language
+  maxHttpBufferSizeMB: 100, // max Socket.IO message size
 };
 
 // Setup i18n
@@ -79,20 +80,20 @@ function setPort() {
         {
           name: 'port',
           type: 'input',
-          message: i18n.__('Set serve port %s:', '10000~65535'),
+          message: i18n.__('Set serve port %s:', '1024~65535'),
           default: 17521,
           validate: (input) => {
             if (
               input &&
               /^\d+$/.test(input) &&
-              input >= 10000 &&
+              input >= 1024 &&
               input <= 65535
             ) {
               return true;
             } else if (!input) {
               return true;
             } else {
-              return i18n.__('Port must be set between %s', '10000 and 65535');
+              return i18n.__('Port must be set between %s', '1024 and 65535');
             }
           },
         },
@@ -161,20 +162,58 @@ function setSSL() {
   });
 }
 
+/**
+ * @description: Set Socket.IO max message size
+ * @return {Promise}
+ */
+function setMaxHttpBufferSize() {
+  return new Promise((resolve) => {
+    inquirer
+      .prompt([
+        {
+          name: 'maxHttpBufferSizeMB',
+          type: 'input',
+          message: 'Set max Socket.IO message size MB:',
+          default: 100,
+          validate: (input) => {
+            if (
+              input &&
+              /^\d+$/.test(input) &&
+              input >= 1 &&
+              input <= 1024
+            ) {
+              return true;
+            } else if (!input) {
+              return true;
+            } else {
+              return 'Max message size must be set between 1 and 1024 MB';
+            }
+          },
+        },
+      ])
+      .then((answers) => {
+        CONFIG.maxHttpBufferSizeMB = answers.maxHttpBufferSizeMB * 1;
+        resolve();
+      });
+  });
+}
+
 setLang().then(() => {
   setPort().then(() => {
     setToken().then(() => {
       setSSL().then(() => {
-        writeConfig(CONFIG)
-          .then(() => {
-            console.log(i18n.__('Configuration file written successfully'));
-          })
-          .catch(() => {
-            console.error(i18n.__('Configuration file write failed'));
-          })
-          .finally(() => {
-            rl.close();
-          });
+        setMaxHttpBufferSize().then(() => {
+          writeConfig(CONFIG)
+            .then(() => {
+              console.log(i18n.__('Configuration file written successfully'));
+            })
+            .catch(() => {
+              console.error(i18n.__('Configuration file write failed'));
+            })
+            .finally(() => {
+              rl.close();
+            });
+        });
       });
     });
   });

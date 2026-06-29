@@ -21,6 +21,7 @@ const CONFIG = {
   token: 'arcoprint',
   useSSL: false,
   lang: 'en',
+  maxHttpBufferSizeMB: 100,
 };
 
 /**
@@ -36,8 +37,8 @@ export function readConfig() {
         try {
           var _CONFIG = Object.assign({}, CONFIG, JSON.parse(data));
           // Check config
-          // Check port need between 10000 and 65535
-          if (_CONFIG.port < 10000 || _CONFIG.port > 65535)
+          // Check port need between 1024 and 65535
+          if (_CONFIG.port < 1024 || _CONFIG.port > 65535)
             _CONFIG.port = '17521';
           CONFIG.port = _CONFIG.port;
           // Check token need more than 6 characters, and can't be empty
@@ -50,6 +51,15 @@ export function readConfig() {
           CONFIG.lang = ['zh', 'en'].includes(_CONFIG.lang)
             ? _CONFIG.lang
             : 'en';
+          _CONFIG.maxHttpBufferSizeMB = Number(_CONFIG.maxHttpBufferSizeMB);
+          if (
+            !_CONFIG.maxHttpBufferSizeMB ||
+            _CONFIG.maxHttpBufferSizeMB < 1 ||
+            _CONFIG.maxHttpBufferSizeMB > 1024
+          ) {
+            _CONFIG.maxHttpBufferSizeMB = 100;
+          }
+          CONFIG.maxHttpBufferSizeMB = _CONFIG.maxHttpBufferSizeMB;
           resolve(CONFIG);
         } catch (error) {
           reject(error);
@@ -66,8 +76,8 @@ export function readConfig() {
  */
 export function writeConfig(_CONFIG) {
   // Check config
-  // Check port need between 10000 and 65535
-  if (_CONFIG.port < 10000 || _CONFIG.port > 65535) _CONFIG.port = '17521';
+  // Check port need between 1024 and 65535
+  if (_CONFIG.port < 1024 || _CONFIG.port > 65535) _CONFIG.port = '17521';
   // Check token need more than 6 characters, and can't be empty
   if ((_CONFIG.token || '').length < 6) {
     _CONFIG.token = 'arcoprint';
@@ -75,6 +85,14 @@ export function writeConfig(_CONFIG) {
   _CONFIG.useSSL = Boolean(_CONFIG.useSSL) || false;
   // Check lang need in ["zh", "en"]
   _CONFIG.lang = ['zh', 'en'].includes(_CONFIG.lang) ? _CONFIG.lang : 'en';
+  _CONFIG.maxHttpBufferSizeMB = Number(_CONFIG.maxHttpBufferSizeMB);
+  if (
+    !_CONFIG.maxHttpBufferSizeMB ||
+    _CONFIG.maxHttpBufferSizeMB < 1 ||
+    _CONFIG.maxHttpBufferSizeMB > 1024
+  ) {
+    _CONFIG.maxHttpBufferSizeMB = 100;
+  }
   return new Promise((resolve, reject) => {
     writeFile(configPath, JSON.stringify(_CONFIG, null, 2), (err) => {
       if (err) {

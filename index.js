@@ -42,9 +42,43 @@ const i18n = new I18n({
 
 const CLIENT = new Map();
 
+function formatPrinter(printer, client, clientId) {
+  const source =
+    printer && typeof printer === 'object'
+      ? printer
+      : { name: String(printer || '') };
+  const value = source.name || source.value || source.displayName || '';
+  const label = source.displayName || source.label || value;
+  return {
+    ...source,
+    label,
+    value,
+    client: clientId,
+    clientId,
+    server: Object.assign({}, client, {
+      clientId,
+      printerList: undefined,
+    }),
+  };
+}
+
+function getAllPrinterList(clients) {
+  const allPrinterList = [];
+  Object.keys(clients || {}).forEach((clientId) => {
+    const client = clients[clientId] || {};
+    const printerList = Array.isArray(client.printerList)
+      ? client.printerList
+      : [];
+    printerList.forEach((printer) => {
+      allPrinterList.push(formatPrinter(printer, client, clientId));
+    });
+  });
+  return allPrinterList;
+}
+
 // Read config first and then start serve
 readConfig().then((CONFIG) => {
-  const { port, token, useSSL, lang } = CONFIG;
+  const { port, token, useSSL, lang, maxHttpBufferSizeMB } = CONFIG;
   var ipAddress = `http://${getIPAddress()}:${port}`;
   i18n.setLocale(lang);
   var server;
@@ -76,6 +110,7 @@ readConfig().then((CONFIG) => {
 
   // Setup socket.io
   const io = new Server(server, {
+    maxHttpBufferSize: maxHttpBufferSizeMB * 1024 * 1024,
     cors: {
       origin: '*',
       methods: ['GET', 'POST'],
@@ -172,21 +207,7 @@ readConfig().then((CONFIG) => {
         socket.emit('clients', CLIENT.get(sToken));
 
         // Send all printer list to web client
-        const allPrinterList = [];
-        const clients = CLIENT.get(sToken);
-        Object.keys(clients).forEach((key) => {
-          const client = clients[key];
-          client.printerList.forEach((printer) => {
-            allPrinterList.push({
-              ...printer,
-              server: Object.assign({}, client, {
-                clientId: key,
-                printerList: undefined,
-              }),
-            });
-          });
-        });
-        socket.emit('printerList', allPrinterList);
+        socket.emit('printerList', getAllPrinterList(CLIENT.get(sToken)));
       }
     } else {
       log(i18n.__('Client connected: %s', `${socket.id} | ${sToken} | (test)`));
@@ -210,10 +231,21 @@ readConfig().then((CONFIG) => {
 
     // Get client printer list
     socket.on('printerList', (printerList) => {
+      if (socket.handshake.query.client !== 'arcoprint') return;
       CLIENT.get(sToken)[socket.id] = Object.assign(
         {},
         CLIENT.get(sToken)[socket.id],
         { printerList },
+      );
+      const allPrinterList = getAllPrinterList(CLIENT.get(sToken));
+      io.to(`${sToken}_web-client`).emit('printerList', allPrinterList);
+      log(
+        i18n.__(
+          '%s update printerList, count: %s, total: %s',
+          socket.id,
+          Array.isArray(printerList) ? printerList.length : 0,
+          allPrinterList.length,
+        ),
       );
     });
 
@@ -224,26 +256,21 @@ readConfig().then((CONFIG) => {
 
     // Get all clients printer list
     socket.on('refreshPrinterList', () => {
+      log(i18n.__('%s request refreshPrinterList', socket.id));
       io.to(`${sToken}_arcoprint`).emit('refreshPrinterList');
 
       // Just wait 2 seconds for the client to update the printer list
       // Of course, this is not a good way to do it. But it’s not like it can’t be used 🤪
       setTimeout(() => {
-        const allPrinterList = [];
-        const clients = CLIENT.get(sToken);
-        Object.keys(clients).forEach((key) => {
-          const client = clients[key];
-          client.printerList.forEach((printer) => {
-            allPrinterList.push({
-              ...printer,
-              server: Object.assign({}, client, {
-                clientId: key,
-                printerList: undefined,
-              }),
-            });
-          });
-        });
+        const allPrinterList = getAllPrinterList(CLIENT.get(sToken));
         socket.emit('printerList', allPrinterList);
+        log(
+          i18n.__(
+            '%s send printerList, count: %s',
+            socket.id,
+            allPrinterList.length,
+          ),
+        );
       }, 1000 * 2);
     });
 
@@ -325,6 +352,14 @@ readConfig().then((CONFIG) => {
               msg: 'Client is not exist.',
               templateId: options.templateId,
             });
+            log(
+              i18n.__(
+                '%s send %s failed, client not exist: %s',
+                socket.id,
+                event,
+                options.client,
+              ),
+            );
             return;
           }
           socket
@@ -336,6 +371,7 @@ readConfig().then((CONFIG) => {
             msg: 'Client must be specified.',
             templateId: options.templateId,
           });
+          log(i18n.__('%s send %s failed, client is missing', socket.id, event));
         }
       });
 
@@ -401,9 +437,9 @@ readConfig().then((CONFIG) => {
     });
 
     // Client disconnect
-    socket.on('disconnect', () => {
+    socket.on('disconnect', (reason) => {
       if (socket.handshake.query.test !== 'true') {
-        log(i18n.__('Client disconnected: %s', socket.id));
+        log(i18n.__('Client disconnected: %s, reason: %s', socket.id, reason));
         // Remove arcoprint client from CLIENT
         if (socket.handshake.query.client === 'arcoprint') {
           delete CLIENT.get(sToken)[socket.id];
