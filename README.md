@@ -58,12 +58,13 @@ volumes:
   - /var/hiprint/logs:/node-hiprint-transit/logs
 ```
 
-如果要把服务端口改成 `9993`，需要同时修改 `config.json` 和 Docker 端口映射：
+## 端口修改
+如果需要修改端口，例如服务端口改成 `9993`，需要同时修改 `config.json` 和 Docker 端口映射：
 
 ```json
 {
   "port": 9993,
-  "token": "arcoprint",
+  "token": "your-transit-token",
   "useSSL": false,
   "lang": "en"
 }
@@ -118,6 +119,8 @@ out/transit-setup-1.0.0.exe
 | `useSSL` | 是否启用 HTTPS/WSS |
 | `lang` | 日志语言，支持 `en`、`zh` |
 
+`token` 不是固定值。Web 端和 ArcoPrint 客户端必须使用同一个 Token，且该 Token 必须能匹配服务端 `config.json` 里的 `token`。如果服务端 token 使用了 `*` 通配符，例如 `store-*`，则 `store-001`、`store-shanghai` 都可以匹配。
+
 端口可以改成任意未占用端口，例如 `9993`。修改后需要重启服务，并确保服务器安全组或防火墙已放行该 TCP 端口。ArcoPrint 客户端和 Web 端连接地址也要同步改成新的端口：
 
 ```text
@@ -170,9 +173,12 @@ import { io } from "socket.io-client";
 const socket = io("http://your-server:17521", {
   transports: ["websocket", "polling"],
   auth: {
-    token: "arcoprint",
+    token: "your-transit-token",
   },
 });
+
+// your-transit-token 只是示例占位符，需要替换成与你服务端 config.json 匹配的 Token。
+// ArcoPrint 客户端设置页里的中转 Token 也要填写同一个值。
 
 socket.on("connect", () => {
   console.log("transit connected", socket.id);
