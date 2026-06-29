@@ -1,0 +1,6 @@
+{
+  "port": 17521,
+  "token": "hiprint",
+  "useSSL": false,
+  "lang": "en"
+}

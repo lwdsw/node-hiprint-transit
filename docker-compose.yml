@@ -1,0 +1,17 @@
+version: '3.8'
+
+services:
+  node-hiprint-transit:
+    container_name: "node-hiprint-transit"
+    build: .
+    ports:
+      - "17521:17521"
+    volumes:
+      - /var/hiprint/config.json:/node-hiprint-transit/config.json
+      - /var/hiprint/logs:/node-hiprint-transit/logs
+      # 以下两项为可选项，不需配置SSL时可删除
+      # - /var/hiprint/ssl.key:/node-hiprint-transit/src/ssl.key
+      # - /var/hiprint/ssl.pem:/node-hiprint-transit/src/ssl.pem
+    environment:
+      TZ: Asia/Shanghai
+      NODE_ENV: production
