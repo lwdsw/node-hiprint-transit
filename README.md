@@ -13,18 +13,7 @@
 - Web 可以获取在线客户端列表和打印机列表。
 - Web 可以指定某个 ArcoPrint 客户端下发打印任务。
 - 支持 HTTP 或 HTTPS/WSS。
-- 支持 Docker、Node.js、Windows 打包产物运行。
-
-## 适用分支
-
-ArcoPrint 目前有两类客户端分支：
-
-| 客户端分支 | 推荐用途 | 中转打印方式 |
-| --- | --- | --- |
-| `simple` | 正式稳定使用 | 只推荐 `blob_pdf` |
-| `sixinone` | 兼容旧方案和排查问题 | 支持 `html`、`url_pdf`、`blob_pdf`、`printByFragments`、`render-print`、`render-pdf/render-jpeg` |
-
-正式业务对接建议使用 `blob_pdf`：Web 端生成最终 PDF，把 PDF Blob 交给 ArcoPrint 打印。这样中转服务和客户端都不参与 HTML 排版，结果更稳定。
+- 支持 Docker 或 Node.js 运行。
 
 ## 安装
 
@@ -69,16 +58,28 @@ volumes:
   - /var/hiprint/logs:/node-hiprint-transit/logs
 ```
 
+如果要把服务端口改成 `9993`，需要同时修改 `config.json` 和 Docker 端口映射：
+
+```json
+{
+  "port": 9993,
+  "token": "arcoprint",
+  "useSSL": false,
+  "lang": "en"
+}
+```
+
+```yaml
+ports:
+  - "9993:9993"
+```
+
 如果启用 SSL，可以额外挂载：
 
 ```yaml
   - /var/hiprint/ssl.key:/node-hiprint-transit/src/ssl.key
   - /var/hiprint/ssl.pem:/node-hiprint-transit/src/ssl.pem
 ```
-
-### Windows 运行
-
-可以使用 `out/transit-setup-0.0.6.exe` 解压安装后运行 `start.bat`。
 
 ## 配置
 
@@ -99,6 +100,13 @@ volumes:
 | `token` | 连接鉴权 Token，长度至少 6 位，支持 `*` 通配符 |
 | `useSSL` | 是否启用 HTTPS/WSS |
 | `lang` | 日志语言，支持 `en`、`zh` |
+
+端口可以改成任意未占用端口，例如 `9993`。修改后需要重启服务，并确保服务器安全组或防火墙已放行该 TCP 端口。ArcoPrint 客户端和 Web 端连接地址也要同步改成新的端口：
+
+```text
+http://服务器IP:9993
+https://域名:9993
+```
 
 初始化向导：
 
