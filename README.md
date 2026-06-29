@@ -22,7 +22,7 @@ ArcoPrint 目前有两类客户端分支：
 | 客户端分支 | 推荐用途 | 中转打印方式 |
 | --- | --- | --- |
 | `simple` | 正式稳定使用 | 只推荐 `blob_pdf` |
-| `sixinone` | 兼容旧方案和排查问题 | 支持 `html`、`url_pdf`、`blob_pdf`、`printByFragments`、`render-print` |
+| `sixinone` | 兼容旧方案和排查问题 | 支持 `html`、`url_pdf`、`blob_pdf`、`printByFragments`、`render-print`、`render-pdf/render-jpeg` |
 
 正式业务对接建议使用 `blob_pdf`：Web 端生成最终 PDF，把 PDF Blob 交给 ArcoPrint 打印。这样中转服务和客户端都不参与 HTML 排版，结果更稳定。
 
@@ -75,6 +75,10 @@ volumes:
   - /var/hiprint/ssl.key:/node-hiprint-transit/src/ssl.key
   - /var/hiprint/ssl.pem:/node-hiprint-transit/src/ssl.pem
 ```
+
+### Windows 运行
+
+可以使用 `out/transit-setup-0.0.6.exe` 解压安装后运行 `start.bat`。
 
 ## 配置
 
