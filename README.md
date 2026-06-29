@@ -81,6 +81,23 @@ ports:
   - /var/hiprint/ssl.pem:/node-hiprint-transit/src/ssl.pem
 ```
 
+### Windows 运行
+
+Windows 服务器可以使用自解压包部署中转服务。先在开发机生成构建产物：
+
+```bash
+npm run build
+npm run package
+```
+
+打包完成后会生成：
+
+```text
+out/transit-setup-1.0.0.exe
+```
+
+把该文件上传到 Windows 服务器后运行解压，修改解压目录里的 `config.json`，再执行 `start.bat` 启动服务。
+
 ## 配置
 
 `config.json` 示例：
